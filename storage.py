@@ -19,37 +19,30 @@
 
 import time
 import os
-
-#from math import sin, pi
-#from random import random
-
 from pyrrd.rrd import RRD, RRA, DS
 
 step = 60
-#startTime = 1138259700
-#endTime = 1138573200
-#maxSteps = int((endTime-startTime)/step)
 
 # rrd allows only up to 19 chars
-dataSources = (                          #1234567890123456789
-        ("flow temperature",            "flow_temp"), 
-        ("return temperature",          "return_temp"), 
-        ("hot gas temperature",         "hot_gas_temp"), 
-        ("DHW temperature",             "dhw_temp"), 
-        ("flow temperature HC2",        "flow_temp_hc2"), 
-        ("inside temperature",          "inside_temp"), 
-        ("evaporator temperature",      "evaporator_temp"), 
-        ("condenser temperature",       "condenser_temp"), 
-        ("extractor speed set",         "extr_speed_set"), 
-        ("ventilator speed set",        "vent_speed_set"), 
-        ("expelled air speed set",      "expel_speed_set"), 
-        ("extractor speed actual",      "extr_speed_actual"), 
-        ("ventilator speed actual",     "vent_speed_actual"), 
-        ("expelled air speed actual",   "expel_speed_actual"), 
-        ("outside temperature",         "outside_temp"), 
-        ("relative humidity",           "rel_humidity"), 
-        ("dew point temperature",       "dew_point_temp") 
-    )
+dataSources = ( #1234567890123456789
+                "flow_temp", 
+                "return_temp", 
+                "hot_gas_temp", 
+                "dhw_temp", 
+                "flow_temp_hc2", 
+                "inside_temp", 
+                "evaporator_temp", 
+                "condenser_temp", 
+                "extr_speed_set", 
+                "vent_speed_set", 
+                "expel_speed_set", 
+                "extr_speed_actual", 
+                "vent_speed_actual", 
+                "expel_speed_actual", 
+                "outside_temp", 
+                "rel_humidity", 
+                "dew_point_temp"
+            )
 
 
 class Storage:
@@ -92,7 +85,7 @@ class Storage:
         # we need to put the dict an correct line
         tmp = []
         for source in dataSources:
-            tmp.append(aDict.get(source[0]) or "U")
+            tmp.append(aDict.get(source) or "U")
         self._rrd.bufferValue(int(time.time()), *tmp)
         self._rrd.update(debug=False)
 

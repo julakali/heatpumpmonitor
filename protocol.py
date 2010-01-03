@@ -21,45 +21,18 @@
 import serial
 import struct
 import sys
+import time
+import protocolVersions
 
 # normally no need to change it
 serialTimeout = 5
 
-## protocol constants
-# common
+# protocol constants
 STARTCOMMUNICATION = "\x02"
 ESCAPE = "\x10"
 BEGIN = "\x01\x00"
 END = "\x03"
-
-# query constants
-GETVERSION = {"name": "getVersion",  "request": "\xfe\xfd"}
-GETACTUALVALUES = {"name": "getActualValues",  "request": "\xfc\xfb"}
-
-# name, position, fixedDecimals
-actualValuesFloatPositions = (
-        # don't know some
-        ("flow temperature",6,1),
-        ("return temperature",8,1),
-        ("hot gas temperature",10,1),
-        ("DHW temperature",12,1),
-        ("flow temperature HC2",14,1),
-        ("inside temperature",16,1),
-        ("evaporator temperature",18,1),
-        ("condenser temperature",20,1),
-        # don't know 22-23,24
-        ("extractor speed set",25,1),
-        ("ventilator speed set",27,1),
-        ("expelled air speed set",29,1),
-        ("extractor speed actual",31,0),
-        ("ventilator speed actual",33,0),
-        ("expelled air speed actual",35,0),
-        ("outside temperature",37,1),
-        ("relative humidity",39,1),
-        ("dew point temperature",41,1)
-        # don't know some
-    )
-
+GETVERSION = "\xfd"
 
 def convert2Number(s, fixedDecimals=1):
     """ converts various input values into float or int """
@@ -106,17 +79,36 @@ def addChecksum(s):
         raise ValueError, "The provided string needs to be atleast 1 byte long"    
     return (_calcChecksum(s) + s)
 
+
+
+
 class Protocol:
     # The device we talk to
     _serialDevice = None
     _debug = None
     
+    # Protocol Versions object 
+    _protocolVersions = None
+    _version = None
+    
+    # The protocol definition the used version of the protocol 
+    _config = None
+    
     # The object which does the serial talking
     _ser = None
 
-    def __init__(self, serialDevice="/dev/ttyS0", debug = False):
+    def __init__(self, serialDevice="/dev/ttyS0", versionsConfigDirectory = "/usr/local/heatpump/protocolVersions", debug=False):
         self._serialDevice = serialDevice
         self._debug = debug
+        
+        # get everything we need for the version specific stuff
+        self._protocolVersions = protocolVersions.ProtocolVersions(versionsConfigDirectory)
+        self._version = self.versionQuery()
+        print "Heatpump reports Version %s" % self._version
+        sys.stdout.flush()
+        self._config = self._protocolVersions.getConfig(self._version)
+        print "Using protocol definition from %s (%s)" % (self._config["author"], self._config["comment"])
+        sys.stdout.flush()
 
 
     def _establishConnection(self):
@@ -141,18 +133,20 @@ class Protocol:
         if self._ser:
             self._ser.close()
             self._ser = None
+            # we wait 1 sec, as it should be avoided that the connection is opened to fast again
+            time.sleep(1)
     
-    def _get(self, consts):
+    def _get(self, queryName,  queryRequest,  queryResponseLength):
         """ internal method which does the real quering - provide it with a dict
             of the query protocol and it will handle the rest
         """
         if not self._ser:
             raise IOError, "Error: serial connection not open"
         # request the data
-        self._ser.write(BEGIN + consts["request"] + ESCAPE + END)
+        self._ser.write(BEGIN + addChecksum(queryRequest) + ESCAPE + END)
         s = self._ser.read(2)
         if s != ESCAPE + STARTCOMMUNICATION:
-            raise IOError, "Error: heat pump does not understand %s request" % consts["name"]
+            raise IOError, "Error: heat pump does not understand %s request" % queryName
         
         # ready to receive data
         self._ser.write(ESCAPE)
@@ -163,12 +157,12 @@ class Protocol:
         while 1:
             tmp = self._ser.read(1)
             if not tmp:
-                raise IOError, "Error: data stream brocken during %s reponse" % consts["name"]
+                raise IOError, "Error: data stream brocken during %s reponse" % queryName
         
             if len(s) < 2: # first 2 chars should be the header
                 s += tmp
                 if len(s) == 2 and s != BEGIN:
-                    raise IOError, "Error: wrong response header for %s request" % consts["name"]
+                    raise IOError, "Error: wrong response header for %s request" % queryName
             else:
                 if escaping:
                     if tmp == END: # special handling
@@ -177,21 +171,32 @@ class Protocol:
                         s += tmp
                         escaping = False
                     else:
-                        raise IOError, "Error: some char (%02x) got escaped which should not in %s request" % (ord(tmp), consts["name"])                    
+                        raise IOError, "Error: some char (%02x) got escaped which should not in %s request" % (ord(tmp), queryName)                    
                 elif tmp == ESCAPE: # this char is used for escaping
                     escaping = True # do add nothing
                 else: # normal, just add the char
                     s += tmp
 
-        # extract the payload
-        payload = s[len(BEGIN):].replace("\x2b\x18", "\x2b") # don't really know why, but it seems necessary
-        
+        # don't really know why, but it seems necessary for some versions
+        if self._config and self._config["globalReplaceString"]:
+            s = s.replace(self._config["globalReplaceString"][0], self._config["globalReplaceString"][1])
+            
+        # check the checksum and if the response matches the request
+        s = s[len(BEGIN):]
+        if len(s) - 2 != queryResponseLength: # 2 = the checksum and the response id.
+            raise IOError,  "Error: the received %s response has an invalid length (%d instead of %d)" % (queryName, len(s) - 2, queryResponseLength)
+        elif not verifyChecksum(s):
+            raise IOError,  "Error: the received %s response has an invalid checksum" % queryName
+        elif s[1] != queryRequest:
+            raise IOError,  "Error: the received %s response has an other id (%02x) as the request " % (queryName, ord(s[1]))
+        payload = s[2:]
+
         # all worked, now we need to reset the connection in a state we can talk again
         self._ser.write(ESCAPE + STARTCOMMUNICATION)
         s = self._ser.read(1)
         if s != ESCAPE:
             printHex(s)
-            raise IOError, "Error: could not be set again into receiving mode (%s)" % consts["name"]
+            raise IOError, "Error: could not be set again into receiving mode (%s)" % queryName
         
         # for debugging
         if self._debug:
@@ -201,29 +206,31 @@ class Protocol:
     
     def _getVersion(self):
         """ extracts the version of the heat pump software """
-        # I don't know what the first 2 bytes mean
-        return convert2Number(self._get(GETVERSION)[2:], 2)
+        return str(convert2Number(self._get("getVersion", GETVERSION, 2), 2))
     
-    def _getActualValues(self):
-        """ extracts the most important values with on query """
-        s = self._get(GETACTUALVALUES)
+    def _getValues(self, queryData):
+        """ extracts the values configured for this query """
+        s = self._get(queryData["name"],  queryData["request"],  queryData["responseLength"])
         result = {}
-        # hack until I find the reason for this problem
-        if len(s) != 55:
-            print "Warning: input is not 55 chars long"
-            sys.stdout.flush()
-        else:
-            for entry in actualValuesFloatPositions:
-                result[entry[0]] =  convert2Number(s[entry[1]:entry[1] + 2], entry[2])
+        for entry in queryData["values"]:
+            result[entry["name"]] =  convert2Number(s[entry["position"]:entry["position"] + entry["size"]], entry["fixedDecimals"])
         return result
-        
+    
+    def versionQuery(self):
+        """ the version query is seperated from the other as it is fixed and not queried every time """
+        try:
+            self._establishConnection()
+            return self._getVersion()
+        finally:
+            self._closeConnection()
+    
     def query(self):
         """ this method return you a dict with the retrieved values from the heat pump """
         result = {}
         try:
             self._establishConnection()
-            result["softwareVersion"] = self._getVersion()
-            result.update(self._getActualValues())
+            for query in self._config["queries"]:
+                result.update(self._getValues(query))
         finally:
             self._closeConnection()
         return result
@@ -231,7 +238,8 @@ class Protocol:
 
 # Main program: only for testing
 def main():
-    aP = Protocol()
+    aP = Protocol(versionsConfigDirectory="protocolVersions/")
+    #print aP._config
     print aP.query()
 
 

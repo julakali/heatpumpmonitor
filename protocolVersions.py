@@ -24,10 +24,18 @@ import os
 class ProtocolVersions:
     _config = None
     _versionsConfigDirectory = None
-    def __init__(self, versionsConfigDirectory = "/usr/local/heatpump/protocolVersions"):
+    def __init__(self, versionsConfigDirectory):
         self._versionsConfigDirectory = versionsConfigDirectory
         self._config = self.parseAllConfigs()
         
+    
+    def getConfig(self, version):
+        """ returns the config specific for the request heat pumpt software version """
+        try:
+            return self._config[version]
+        except:
+            raise ValueError, "No configuration available for this software version of the heat pump."
+    
     def parseAllConfigs(self):
         """ searches through the directory and adds eachs version config to the big config """
         result = {}
@@ -51,7 +59,13 @@ class ProtocolVersions:
         versions = p.get("Global", "versions").strip().split()
         config["author"] = p.get("Global", "author")
         config["comment"] = p.get("Global", "comment")
-        config["globalReplaceString"] = p.get("Global", "globalReplaceString").strip().decode("string-escape").split()
+        
+        # later this can be extended for multible replaces
+        tmp = p.get("Global", "globalReplaceString").strip().decode("string-escape").split()
+        if not tmp:
+            config["globalReplaceString"] = None
+        else:
+            config["globalReplaceString"] = tmp
         
         # now jump to the query specific settings
         queries = []

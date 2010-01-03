@@ -23,6 +23,7 @@ serialDevice = "/dev/ttyS0"
 databaseFile = "/var/lib/heatpumpMonitor/heatpumpMonitor.rrd"
 renderOutputPath = "/var/www/graphs/"
 renderInterval = 5
+protocolVersionsDirectory = "/usr/local/heatpump/protocolVersions"
 
 myLogFile = "/var/log/heatpumpMonitor.log"
 myPidFile = "/var/run/heatpumpMonitor.pid"
@@ -72,7 +73,7 @@ def doMonitor():
     print "Starting ..."
     sys.stdout.flush()
     
-    p = protocol.Protocol(serialDevice)
+    p = protocol.Protocol(serialDevice, protocolVersionsDirectory)
     s = storage.Storage(databaseFile)
     r = render.Render(databaseFile, renderOutputPath)
     
