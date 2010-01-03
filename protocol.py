@@ -61,14 +61,19 @@ actualValuesFloatPositions = (
     )
 
 
-def convert2Float(s, fixedDecimals=1):
-    if len(s) != 2:
-        raise ValueError, "need excactly 2 bytes for float conversion"
-    l = struct.unpack(">h",s)
-    if fixedDecimals == 0:
-        return l[0]
+def convert2Number(s, fixedDecimals=1):
+    """ converts various input values into float or int """
+    if not len(s) in (1, 2):
+        raise ValueError, "currenty this function supports only 1 and 2 byte inputs"
+    elif len(s) == 1:
+        f = ">b"
     else:
-        return l[0]/10.0**fixedDecimals
+        f = ">h"
+    l = struct.unpack(f,s)[0]
+    if fixedDecimals == 0:
+        return l
+    else:
+        return l/10.0**fixedDecimals
 
 def printHex(s):
     print "debug: ", 
@@ -197,7 +202,7 @@ class Protocol:
     def _getVersion(self):
         """ extracts the version of the heat pump software """
         # I don't know what the first 2 bytes mean
-        return convert2Float(self._get(GETVERSION)[2:], 2)
+        return convert2Number(self._get(GETVERSION)[2:], 2)
     
     def _getActualValues(self):
         """ extracts the most important values with on query """
@@ -209,7 +214,7 @@ class Protocol:
             sys.stdout.flush()
         else:
             for entry in actualValuesFloatPositions:
-                result[entry[0]] =  convert2Float(s[entry[1]:entry[1] + 2], entry[2])
+                result[entry[0]] =  convert2Number(s[entry[1]:entry[1] + 2], entry[2])
         return result
         
     def query(self):
