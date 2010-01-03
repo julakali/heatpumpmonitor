@@ -19,30 +19,67 @@
 """
 
 from ConfigParser import *
-
+import os
 
 class ProtocolVersions:
     _config = None
-    _configFile = None
-    def __init__(self, versionsConfigsDirectory = "/usr/local/heatpump/protocolVersions"):
+    _versionsConfigDirectory = None
+    def __init__(self, versionsConfigDirectory = "/usr/local/heatpump/protocolVersions"):
+        self._versionsConfigDirectory = versionsConfigDirectory
+        self._config = self.parseAllConfigs()
         
-        if not configFile:
-            configFile = defaultConfigFile
+    def parseAllConfigs(self):
+        """ searches through the directory and adds eachs version config to the big config """
+        result = {}
+        for filename in os.listdir(self._versionsConfigDirectory):
+            if os.path.splitext(filename)[1].lower() == ".ini":
+                versions, config = self.parseConfig(os.path.join(self._versionsConfigDirectory, filename))
+                for version in versions:
+                    result[version] = config
+        return result
 
-        if not os.path.isfile(configFile):
-            sys.stdout = sys.stderr
-            print "Error: Cannot find config file %r" % configFile
-            sys.exit(2)
-
-        self._config = SafeConfigParser()
-        self._config.read(configFile)
-        self._configFile = configFile
-
+    def parseConfig(self, filename):
+        """ parses the config into our internal format, not much error handling is done
+            at this point as these files should be only created by "experts" ;-)
+        """
+        config = {}
+        
+        p = ConfigParser()
+        p.read(filename)
+        
+        # global section stuff
+        versions = p.get("Global", "versions").strip().split()
+        config["author"] = p.get("Global", "author")
+        config["comment"] = p.get("Global", "comment")
+        config["globalReplaceString"] = p.get("Global", "globalReplaceString").strip().decode("string-escape").split()
+        
+        # now jump to the query specific settings
+        queries = []
+        for queryName in p.get("Global", "queries").strip().split():
+            query = {"name": queryName}
+            query["comment"] = p.get(queryName, "comment")
+            query["request"] = p.get(queryName, "request").decode("string-escape")
+            query["responseLength"] = p.getint(queryName, "responseLength")
+            
+            # now the value part in the correct order
+            tmp = p.items(queryName)
+            tmp.sort()
+            vs = []
+            for name, value in tmp:
+                if not name.startswith("value"):
+                    continue
+                v = value.strip().split()
+                vs.append({"name": v[0], "position": int(v[1]), "type": v[2], "size": int(v[3]), "fixedDecimals": int(v[4])})
+            query["values"] = vs
+            queries.append(query)
+        config["queries"] = queries
+        return versions, config
+        
 
 # Main program: only for testing
 def main():
-    aP = Protocol()
-    print aP.query()
+    aP = ProtocolVersions("protocolVersions/")
+    print aP._config
 
 
 if __name__ == '__main__':
