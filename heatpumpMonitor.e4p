@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project heatpumpMonitor -->
-<!-- Saved: 2009-12-27, 23:08:25 -->
-<!-- Copyright (C) 2009 Robert Penz, robert@penz.name -->
+<!-- Saved: 2010-01-03, 23:46:13 -->
+<!-- Copyright (C) 2010 Robert Penz, robert@penz.name -->
 <Project version="4.6">
   <Language>en</Language>
   <ProgLanguage mixed="0">Python</ProgLanguage>
@@ -27,7 +27,7 @@
   <Interfaces>
   </Interfaces>
   <Others>
-    <Other>protocols/Version_3.48.ini</Other>
+    <Other>protocolVersions/Version_4.38.ini</Other>
   </Others>
   <MainScript>heatpumpMonitor.py</MainScript>
   <Vcs>
