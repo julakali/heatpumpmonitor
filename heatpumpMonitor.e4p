@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Project SYSTEM "Project-4.6.dtd">
+<!-- eric4 project file for project heatpumpMonitor -->
+<!-- Saved: 2009-12-27, 23:08:25 -->
+<!-- Copyright (C) 2009 Robert Penz, robert@penz.name -->
+<Project version="4.6">
+  <Language>en</Language>
+  <ProgLanguage mixed="0">Python</ProgLanguage>
+  <ProjectType>Console</ProjectType>
+  <Description></Description>
+  <Version>0.1</Version>
+  <Author>Robert Penz</Author>
+  <Email>robert@penz.name</Email>
+  <Sources>
+    <Source>protocol.py</Source>
+    <Source>deamon.py</Source>
+    <Source>heatpumpMonitor.py</Source>
+    <Source>render.py</Source>
+    <Source>storage.py</Source>
+  </Sources>
+  <Forms>
+  </Forms>
+  <Translations>
+  </Translations>
+  <Resources>
+  </Resources>
+  <Interfaces>
+  </Interfaces>
+  <Others>
+    <Other>protocols/Version_3.48.ini</Other>
+  </Others>
+  <MainScript>heatpumpMonitor.py</MainScript>
+  <Vcs>
+    <VcsType>None</VcsType>
+  </Vcs>
+  <FiletypeAssociations>
+    <FiletypeAssociation pattern="*.pyw" type="SOURCES" />
+    <FiletypeAssociation pattern="*.idl" type="INTERFACES" />
+    <FiletypeAssociation pattern="*.py" type="SOURCES" />
+    <FiletypeAssociation pattern="*.ptl" type="SOURCES" />
+  </FiletypeAssociations>
+</Project>
