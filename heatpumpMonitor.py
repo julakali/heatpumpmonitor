@@ -37,11 +37,14 @@ myLogFile = "/var/log/heatpumpMonitor.log"
 myPidFile = "/var/run/heatpumpMonitor.pid"
 
 databaseFile = "/var/lib/heatpumpMonitor/heatpumpMonitor.rrd"
-protocolVersionsDirectory = "/usr/local/heatpump/protocolVersions"
+protocolVersionsDirectory = "/usr/local/share/heatpumpMonitor/protocolVersions"
 
 ########################### no changes beyond here required ##############################
 
 #TODO: Create a common log system which is able to write a timestamp before the entry
+#TODO: define which line is painted over which in the graphs
+#TODO: react on error codes retrieved from the heat pump
+
 
 import time
 import sys

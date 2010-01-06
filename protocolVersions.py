@@ -83,7 +83,10 @@ class ProtocolVersions:
                 if not name.startswith("value"):
                     continue
                 v = value.strip().split()
-                vs.append({"name": v[0], "position": int(v[1]), "type": v[2], "size": int(v[3]), "fixedDecimals": int(v[4])})
+                if v[2].lower() == "fixedpoint":
+                    vs.append({"name": v[0], "position": int(v[1]), "type": "fixedPoint", "size": int(v[3]), "fixedDecimals": int(v[4])})
+                elif v[2].lower() == "datetime":
+                    vs.append({"name": v[0], "position": int(v[1]), "type": "DateTime", "size": int(v[3]), "separator": v[4]})
             query["values"] = vs
             queries.append(query)
         config["queries"] = queries

@@ -37,7 +37,7 @@ GETVERSION = "\xfd"
 def convert2Number(s, fixedDecimals=1):
     """ converts various input values into float or int """
     if not len(s) in (1, 2):
-        raise ValueError, "currenty this function supports only 1 and 2 byte inputs"
+        raise ValueError, "Error: currenty this function supports only 1 and 2 byte inputs"
     elif len(s) == 1:
         f = ">b"
     else:
@@ -47,6 +47,13 @@ def convert2Number(s, fixedDecimals=1):
         return l
     else:
         return l/10.0**fixedDecimals
+
+def convert2DateTime(s, separator):
+    """ converts the input into a string which looks like a time or date """
+    if len(s) != 2:
+        raise ValueError, "Error: only 2 byte inputs are supported"
+    l = "%04d" % struct.unpack("<H", s)[0]
+    return l[:2] + separator + l[2:]
 
 def printHex(s):
     print "debug: ", 
@@ -213,7 +220,11 @@ class Protocol:
         s = self._get(queryData["name"],  queryData["request"],  queryData["responseLength"])
         result = {}
         for entry in queryData["values"]:
-            result[entry["name"]] =  convert2Number(s[entry["position"]:entry["position"] + entry["size"]], entry["fixedDecimals"])
+            # diffent types need to be converted differently
+            if entry["type"] == "fixedPoint":
+                result[entry["name"]] =  convert2Number(s[entry["position"]:entry["position"] + entry["size"]], entry["fixedDecimals"])
+            elif entry["type"] == "DateTime":
+                result[entry["name"]] =  convert2DateTime(s[entry["position"]:entry["position"] + entry["size"]], entry["separator"])
         return result
     
     def versionQuery(self):
