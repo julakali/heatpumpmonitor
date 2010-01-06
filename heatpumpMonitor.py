@@ -25,10 +25,13 @@ serialDevice = "/dev/ttyS0"
 renderOutputPath = "/var/www/graphs/"
 renderInterval = 5
 
-# this command will be executed every the interval is up
+# this command will be executed everytime the interval is up
 # use this for example to upload the pics to a webserver in the internet
-copyCommand = "ls -la"
-copyInterval = 5
+# This example uses lftp to upload to the website stored in the lftp bookmarks file
+# this way no hostname,user and password is within this script
+# If you don't need this set the variable to None
+copyCommand = 'echo "mirror -R /var/www/graphs/" | lftp website'
+copyInterval = 15
 
 myLogFile = "/var/log/heatpumpMonitor.log"
 myPidFile = "/var/run/heatpumpMonitor.pid"
@@ -109,7 +112,7 @@ def doMonitor():
             r.render()
         
         # upload it somewhere if it fits the time
-        if counter % copyInterval == 0:
+        if copyCommand and counter % copyInterval == 0:
             if c and c.isAlive():
                 print "Error: External copy program still running, cannot start it again"
                 sys.stdout.flush()
