@@ -18,29 +18,6 @@
     Written by Robert Penz <robert@penz.name>
 """
 
-# the configuration
-serialDevice = "/dev/ttyS0"
-
-# this is the output path of the diagrams and it is generated every 5 min
-renderOutputPath = "/var/www/graphs/"
-renderInterval = 5
-
-# this command will be executed everytime the interval is up
-# use this for example to upload the pics to a webserver in the internet
-# This example uses lftp to upload to the website stored in the lftp bookmarks file
-# this way no hostname,user and password is within this script
-# If you don't need this set the variable to None
-copyCommand = 'echo "mirror -R /var/www/graphs/" | lftp website'
-copyInterval = 15
-
-myLogFile = "/var/log/heatpumpMonitor.log"
-myPidFile = "/var/run/heatpumpMonitor.pid"
-
-databaseFile = "/var/lib/heatpumpMonitor/heatpumpMonitor.rrd"
-protocolVersionsDirectory = "/usr/local/share/heatpumpMonitor/protocolVersions"
-
-########################### no changes beyond here required ##############################
-
 #TODO: Create a common log system which is able to write a timestamp before the entry
 #TODO: define which line is painted over which in the graphs
 #TODO: react on error codes retrieved from the heat pump
@@ -55,7 +32,8 @@ import storage
 import render
 import deamon
 import threadedExec
-
+import config_manager
+import thresholdMonitor
 
 # Print usage message and exit
 def usage(*args):
@@ -87,15 +65,20 @@ def doMonitor():
     print "Starting ..."
     sys.stdout.flush()
     
-    p = protocol.Protocol(serialDevice, protocolVersionsDirectory)
-    s = storage.Storage(databaseFile)
-    r = render.Render(databaseFile, renderOutputPath)
-    c = None
+    config = config_manager.ConfigManager()
+    p = protocol.Protocol(config.getSerialDevice(), config.getProtocolVersionsDirectory())
+    s = storage.Storage(config.getDatabaseFile())
+    r = render.Render(config.getDatabaseFile(), config.getRenderOutputPath())
+    c = None # ThreadedExec for copyCommand
+    t = thresholdMonitor.ThresholdMonitor(config)
     
     print "Up and running"
     sys.stdout.flush()
     
     counter = 0
+    renderInterval = config.getRenderInterval()
+    copyCommand = config.getCopyCommand()
+    copyInterval = config.getCopyInterval()
     while 1:
         startTime = time.time()
         try:
@@ -104,6 +87,7 @@ def doMonitor():
             # log the error and just try it again in 120 sec - sometimes the heatpump returns an error and works
             # seconds later again
             logError(e)
+            t.gotQueryError()
             time.sleep(120 - (time.time() - startTime))
             continue
         
@@ -123,8 +107,12 @@ def doMonitor():
                 c = threadedExec.ThreadedExec(copyCommand)
                 c.start()
         counter += 1
+        
+        # at last check the values if something needs to reported
+        t.check(values)
+        
         # lets make sure it is aways 60 secs interval, no matter how long the last run took
-        time.sleep(60 - (time.time() - startTime))
+        time.sleep(61 - (time.time() - startTime))
 
 
 # Main program: parse command line and start processing
