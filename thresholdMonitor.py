@@ -17,10 +17,7 @@
     Written by Robert Penz <robert@penz.name>
 """
 
-import time
-import os
-
-class ThreshholdMonitor:
+class ThresholdMonitor:
     _config = None
     _report = None
     _referenceValues = None
@@ -45,7 +42,7 @@ class ThreshholdMonitor:
         
         # if its the first check don't report anything, we need a baseline
         if self._firstcheck:
-            self._updateBaseline()
+            self._updateBaseline(values)
             self._firstcheck = False
             return
         
@@ -55,12 +52,12 @@ class ThreshholdMonitor:
                 # somehow the value got reseted to an lower value
                 # maybe heatpump resetet or an error
                 # report that and update the reference value
-                self._referenceValues[value] = values[value]
                 self._report.counterDecreased(name = value, reference = self._referenceValues[value], actual = values[value])
+                self._referenceValues[value] = values[value]
             elif values[value] > self._referenceValues[value]:
                 # ok, counter got incremented, we report that
-                self._referenceValues[value] = values[value]
                 self._report.counterIncreased(name = value, reference = self._referenceValues[value], actual = values[value])
+                self._referenceValues[value] = values[value]
     
     def gotQueryError(self):
         """ increments the error counter and checks if
@@ -82,8 +79,15 @@ class ThreshholdMonitor:
 
 # Main program: parse command line and start processing
 def main():
-    aR = Render()
-    aR.render()
-
+    import config_manager, report
+    config = config_manager.ConfigManager("heatpumpMonitor.ini")
+    aT = ThresholdMonitor(config, report.Report(config))
+    aT.gotQueryError()
+    aT.gotQueryError()
+    aT.gotQueryError()
+    aT.check({"booster_dhw": 100, "booster_heating": 200})
+    aT.check({"booster_dhw": 101, "booster_heating": 200})
+    aT.check({"booster_dhw": 100, "booster_heating": 200})
+    
 if __name__ == '__main__':
     main()

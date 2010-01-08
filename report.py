@@ -29,18 +29,28 @@ class Report:
 
     def queryErrorThresholdExceeded(self):
         """ send a report that the query error threshold got exceeded """
-        self._sendMail(self._config.getQueryErrorThresholdExceededSubject(), self._config.getQueryErrorThresholdExceededBody())
+        self.doReport(self._config.getQueryErrorThresholdExceededSubject(), self._config.getQueryErrorThresholdExceededBody())
 
     def counterDecreased(self, name, reference, actual):
         """ send a report that the counter decreased """
         tmp = {"name": name, "reference": reference, "actual": actual}
-        self._sendMail(self._config.getCounterDecreasedSubject() % tmp, self._config.getCounterDecreasedBody() % tmp)
+        self.doReport(self._config.getCounterDecreasedSubject() % tmp, self._config.getCounterDecreasedBody() % tmp)
         
     def counterIncreased(self, name, reference, actual):
         """ send a report that the counter increased """
         tmp = {"name": name, "reference": reference, "actual": actual}
-        self._sendMail(self._config.getCounterIncreasedSubject() % tmp, self._config.getCounterIncreasedBody() % tmp)
-            
+        self.doReport(self._config.getCounterIncreasedSubject() % tmp, self._config.getCounterIncreasedBody() % tmp)
+    
+    def doReport(self, subject, boby):
+        """ decides if we send a mail or not """
+        if self._config.getSendMails():
+            self._sendMail(subject, boby)
+        else:
+            print "-------------"
+            print "Error:", subject
+            print "Error details", boby
+            print "-------------"
+    
     ## ###############################  internal methods  ################################################
     
     def _sendMail(self, subject, body):

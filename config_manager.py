@@ -113,7 +113,7 @@ class ConfigManager:
         return self._config.get("Threshold", "thresholdCounters").strip().split()  
     
     def getQueryErrorThreshold(self):
-        return self._config.getint("Threshold", "queryErrorThreashold")  
+        return self._config.getint("Threshold", "queryErrorThreshold")  
         
     
 # Main program: parse command line and start processing

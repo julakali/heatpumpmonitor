@@ -20,8 +20,6 @@
 
 #TODO: Create a common log system which is able to write a timestamp before the entry
 #TODO: define which line is painted over which in the graphs
-#TODO: react on error codes retrieved from the heat pump
-
 
 import time
 import sys
@@ -33,7 +31,10 @@ import render
 import deamon
 import threadedExec
 import config_manager
+import report
 import thresholdMonitor
+
+config = None
 
 # Print usage message and exit
 def usage(*args):
@@ -65,12 +66,12 @@ def doMonitor():
     print "Starting ..."
     sys.stdout.flush()
     
-    config = config_manager.ConfigManager()
     p = protocol.Protocol(config.getSerialDevice(), config.getProtocolVersionsDirectory())
     s = storage.Storage(config.getDatabaseFile())
     r = render.Render(config.getDatabaseFile(), config.getRenderOutputPath())
     c = None # ThreadedExec for copyCommand
-    t = thresholdMonitor.ThresholdMonitor(config)
+    aReport = report.Report(config)
+    t = thresholdMonitor.ThresholdMonitor(config, aReport)
     
     print "Up and running"
     sys.stdout.flush()
@@ -117,7 +118,9 @@ def doMonitor():
 
 # Main program: parse command line and start processing
 def main():
-    deamon.startstop(stdout=myLogFile, pidfile=myPidFile)
+    global config
+    config = config_manager.ConfigManager()
+    deamon.startstop(config.getLogFile(), config.getPidFile())
     doMonitor()
     
 if __name__ == '__main__':
