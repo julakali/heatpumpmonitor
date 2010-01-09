@@ -63,58 +63,61 @@ def logError(e):
     
     
 def doMonitor():
-    print "Starting ..."
-    sys.stdout.flush()
-    
-    p = protocol.Protocol(config.getSerialDevice(), config.getProtocolVersionsDirectory())
-    s = storage.Storage(config.getDatabaseFile())
-    r = render.Render(config.getDatabaseFile(), config.getRenderOutputPath())
-    c = None # ThreadedExec for copyCommand
-    aReport = report.Report(config)
-    t = thresholdMonitor.ThresholdMonitor(config, aReport)
-    
-    print "Up and running"
-    sys.stdout.flush()
-    
-    counter = 0
-    renderInterval = config.getRenderInterval()
-    copyCommand = config.getCopyCommand()
-    copyInterval = config.getCopyInterval()
-    while 1:
-        startTime = time.time()
-        try:
-            values = p.query()
-        except Exception, e:
-            # log the error and just try it again in 120 sec - sometimes the heatpump returns an error and works
-            # seconds later again
-            logError(e)
-            t.gotQueryError()
-            time.sleep(120 - (time.time() - startTime))
-            continue
+    try:
+        print "Starting ..."
+        sys.stdout.flush()
         
-        # store the stuff
-        s.add(values)
+        p = protocol.Protocol(config.getSerialDevice(), config.getProtocolVersionsDirectory())
+        s = storage.Storage(config.getDatabaseFile())
+        r = render.Render(config.getDatabaseFile(), config.getRenderOutputPath())
+        c = None # ThreadedExec for copyCommand
+        aReport = report.Report(config)
+        t = thresholdMonitor.ThresholdMonitor(config, aReport)
         
-        # render it if the time is right
-        if counter % renderInterval == 0:
-            r.render()
+        print "Up and running"
+        sys.stdout.flush()
         
-        # upload it somewhere if it fits the time
-        if copyCommand and counter % copyInterval == 0:
-            if c and c.isAlive():
-                print "Error: External copy program still running, cannot start it again"
-                sys.stdout.flush()
-            else:
-                c = threadedExec.ThreadedExec(copyCommand)
-                c.start()
-        counter += 1
-        
-        # at last check the values if something needs to reported
-        t.check(values)
-        
-        # lets make sure it is aways 60 secs interval, no matter how long the last run took
-        time.sleep(61 - (time.time() - startTime))
-
+        counter = 0
+        renderInterval = config.getRenderInterval()
+        copyCommand = config.getCopyCommand()
+        copyInterval = config.getCopyInterval()
+        while 1:
+            startTime = time.time()
+            try:
+                values = p.query()
+            except Exception, e:
+                # log the error and just try it again in 120 sec - sometimes the heatpump returns an error and works
+                # seconds later again
+                logError(e)
+                t.gotQueryError()
+                time.sleep(120 - (time.time() - startTime))
+                continue
+            
+            # store the stuff
+            s.add(values)
+            
+            # render it if the time is right
+            if counter % renderInterval == 0:
+                r.render()
+            
+            # upload it somewhere if it fits the time
+            if copyCommand and counter % copyInterval == 0:
+                if c and c.isAlive():
+                    print "Error: External copy program still running, cannot start it again"
+                    sys.stdout.flush()
+                else:
+                    c = threadedExec.ThreadedExec(copyCommand)
+                    c.start()
+            counter += 1
+            
+            # at last check the values if something needs to reported
+            t.check(values)
+            
+            # lets make sure it is aways 60 secs interval, no matter how long the last run took
+            time.sleep(61 - (time.time() - startTime))
+    except Exception, e:
+        # make sure the error got logged
+        logError(e)
 
 # Main program: parse command line and start processing
 def main():
