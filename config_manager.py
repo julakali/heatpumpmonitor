@@ -61,6 +61,18 @@ class ConfigManager:
     def getSmtpHost(self):
         return self._config.get("Mail", "smtpHost")
 
+    def getSmtpUseTLS(self):
+        return self._config.getboolean("Mail", "smtpUseTLS")
+
+    def getSmtpPort(self):
+        return self._config.getint("Mail", "smtpPort")
+
+    def getSmtpAuthUser(self):
+        return self._config.get("Mail", "smtpAuthUser")
+
+    def getSmtpAuthPass(self):
+        return self._config.get("Mail", "smtpAuthPass")
+
     def getFromAddress(self):
         return self._config.get("Mail", "fromAddress")
 

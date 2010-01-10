@@ -62,12 +62,17 @@ class Report:
         msg['To'] = ",".join(self._config.getToAddresses())
         msg['Date'] = time.strftime('%a, %d %b %Y %H:%M:%S +0000', time.gmtime())
         
-        # Send the message via our own SMTP server, but don't include the
-        # envelope header.
-        s = smtplib.SMTP()
-        s.connect(self._config.getSmtpHost())
-        s.sendmail(self._config.getFromAddress(), self._config.getToAddresses() , msg.as_string())
+        # now send the mail via SMTP
+        s = smtplib.SMTP(self._config.getSmtpHost(), self._config.getSmtpPort())
+        if self._config.getSmtpUseTLS():
+            s.starttls()
+        if self._config.getSmtpAuthUser():
+            s.login(self._config.getSmtpAuthUser(), self._config.getSmtpAuthPass())
+            s.sendmail(self._config.getSmtpAuthUser(), self._config.getToAddresses() , msg.as_string())
+        else:
+            s.sendmail(self._config.getFromAddress(), self._config.getToAddresses() , msg.as_string())
         s.close()
+
 
 # Main program: parse command line and start processing
 def main():
