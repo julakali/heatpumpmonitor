@@ -104,7 +104,7 @@ class Protocol:
     # The object which does the serial talking
     _ser = None
 
-    def __init__(self, serialDevice="/dev/ttyS0", versionsConfigDirectory = "/usr/local/heatpump/protocolVersions", debug=False):
+    def __init__(self, serialDevice="/dev/ttyS0", versionsConfigDirectory = "/usr/local/share/heatpump/protocolVersions", debug=False):
         self._serialDevice = serialDevice
         self._debug = debug
         

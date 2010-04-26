@@ -61,7 +61,7 @@ class Storage:
         # Let's setup some data sources for our RRD
         dss = []
         for source in dataSources:
-            dss.append(DS(dsName=source[1], dsType='GAUGE', heartbeat=900))
+            dss.append(DS(dsName=source, dsType='GAUGE', heartbeat=900))
 
         # An now let's setup how our RRD will archive the data
         rras = []

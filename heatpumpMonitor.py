@@ -88,6 +88,7 @@ def doMonitor():
             except Exception, e:
                 # log the error and just try it again in 120 sec - sometimes the heatpump returns an error and works
                 # seconds later again
+                # If the query takes longer than 2 minutes, we get a negative value ... maybe a problem in rare contitions
                 logError(e)
                 t.gotQueryError()
                 time.sleep(120 - (time.time() - startTime))
@@ -114,7 +115,11 @@ def doMonitor():
             t.check(values)
             
             # lets make sure it is aways 60 secs interval, no matter how long the last run took
-            time.sleep(61 - (time.time() - startTime))
+            sleepTime = 61 - (time.time() - startTime)
+            if sleepTime < 0:
+                print "System is too slow for 60 sec interval by %d seconds" % abs(int(sleepTime))
+            else:
+                time.sleep(sleepTime)
     except Exception, e:
         # make sure the error got logged
         logError(e)
@@ -123,7 +128,7 @@ def doMonitor():
 def main():
     global config
     config = config_manager.ConfigManager()
-    deamon.startstop(config.getLogFile(), config.getPidFile())
+    deamon.startstop(config.getLogFile(), pidfile=config.getPidFile())
     doMonitor()
     
 if __name__ == '__main__':
