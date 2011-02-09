@@ -102,7 +102,10 @@ class ConfigManager:
     # Protocol
     def getSerialDevice(self):
         return self._config.get("Protocol", "serialDevice")
-        
+    
+    def getNewStyleServialCommunication(self):
+        return self._config.getboolean("Protocol", "newStyleServialCommunication")
+    
     def getProtocolVersionsDirectory(self):
         return self._config.get("Protocol", "protocolVersionsDirectory")
         

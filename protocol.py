@@ -104,9 +104,10 @@ class Protocol:
     # The object which does the serial talking
     _ser = None
 
-    def __init__(self, serialDevice="/dev/ttyS0", versionsConfigDirectory = "/usr/local/share/heatpump/protocolVersions", debug=False):
+    def __init__(self, serialDevice="/dev/ttyS0", versionsConfigDirectory = "/usr/local/share/heatpump/protocolVersions", newStyleServialCommunication = True,  debug=False):
         self._serialDevice = serialDevice
         self._debug = debug
+        self._newStyleServialCommunication = newStyleServialCommunication
         
         # get everything we need for the version specific stuff
         self._protocolVersions = protocolVersions.ProtocolVersions(versionsConfigDirectory)
@@ -126,7 +127,12 @@ class Protocol:
             raise IOError, "Error: serial connection already open"
         
         # open the serial connection
-        self._ser = serial.Serial(self._serialDevice, timeout=serialTimeout)
+        if self._newStyleServialCommunication:
+            # 57600, 8, N, 1
+            self._ser = serial.Serial(self._serialDevice, timeout=serialTimeout, baudrate=57600)
+        else:
+            # old version
+            self._ser = serial.Serial(self._serialDevice, timeout=serialTimeout) 
 
         # check if the heat pump is connected and responds
         self._ser.write(STARTCOMMUNICATION)

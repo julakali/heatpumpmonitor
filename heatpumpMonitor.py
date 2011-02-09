@@ -67,7 +67,7 @@ def doMonitor():
         print "Starting ..."
         sys.stdout.flush()
         
-        p = protocol.Protocol(config.getSerialDevice(), config.getProtocolVersionsDirectory())
+        p = protocol.Protocol(config.getSerialDevice(), config.getProtocolVersionsDirectory(), config.getNewStyleServialCommunication())
         s = storage.Storage(config.getDatabaseFile())
         r = render.Render(config.getDatabaseFile(), config.getRenderOutputPath())
         c = None # ThreadedExec for copyCommand
