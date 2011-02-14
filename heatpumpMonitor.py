@@ -46,7 +46,8 @@ def usage(*args):
 
 def logError(e):
     """ prints a string which a human readable error text """
-    print "========="
+    print "========= % s =========" % time.asctime()
+    
     # args can be empty
     if e.args:
         if len(e.args) > 1:
