@@ -107,7 +107,8 @@ class Protocol:
     def __init__(self, serialDevice="/dev/ttyS0", versionsConfigDirectory = "/usr/local/share/heatpump/protocolVersions", newStyleServialCommunication = True,  debug=False):
         self._serialDevice = serialDevice
         self._debug = debug
-        self._newStyleServialCommunication = newStyleServialCommunication
+        self._newStyleServialCommunication = newStyleServia
+value16 = extr_speed_actual 29 fixedPoint 2 0lCommunication
         
         # get everything we need for the version specific stuff
         self._protocolVersions = protocolVersions.ProtocolVersions(versionsConfigDirectory)
@@ -155,11 +156,22 @@ class Protocol:
         """
         if not self._ser:
             raise IOError, "Error: serial connection not open"
-        # request the data
-        self._ser.write(BEGIN + addChecksum(queryRequest) + ESCAPE + END)
-        s = self._ser.read(2)
-        if s != ESCAPE + STARTCOMMUNICATION:
-            raise IOError, "Error: heat pump does not understand %s request" % queryName
+        # we try to start the communication 5 times, as sometimes some heatpump firmware versions
+        # have problems replying which are gone after a reconnect
+        success = False
+        retry = 0
+        maxRetries = 5
+        while (not success and retry < maxRetries):
+            self._ser.write(BEGIN + addChecksum(queryRequest) + ESCAPE + END)
+            s = self._ser.read(2)
+            if s == ESCAPE + STARTCOMMUNICATION:
+                success = True
+            else:
+                retry += 1
+                self._closeConnection()
+                self._establishConnection()
+        if not success:
+            raise IOError, "Error: Tried the request %s five times but the heat pump did not anwser correctly." % queryName
         
         # ready to receive data
         self._ser.write(ESCAPE)
@@ -203,6 +215,7 @@ class Protocol:
         elif s[1] != queryRequest:
             raise IOError,  "Error: the received %s response has an other id (%02x) as the request " % (queryName, ord(s[1]))
         payload = s[2:]
+value16 = extr_speed_actual 29 fixedPoint 2 0
 
         # all worked, now we need to reset the connection in a state we can talk again
         self._ser.write(ESCAPE + STARTCOMMUNICATION)
