@@ -87,8 +87,6 @@ def addChecksum(s):
     return (_calcChecksum(s) + s)
 
 
-
-
 class Protocol:
     # The device we talk to
     _serialDevice = None
@@ -104,11 +102,10 @@ class Protocol:
     # The object which does the serial talking
     _ser = None
 
-    def __init__(self, serialDevice="/dev/ttyS0", versionsConfigDirectory = "/usr/local/share/heatpump/protocolVersions", newStyleServialCommunication = True,  debug=False):
+    def __init__(self, serialDevice="/dev/ttyS0", versionsConfigDirectory = "/usr/local/share/heatpump/protocolVersions", newStyleSerialCommunication = True,  debug=False):
         self._serialDevice = serialDevice
         self._debug = debug
-        self._newStyleServialCommunication = newStyleServia
-value16 = extr_speed_actual 29 fixedPoint 2 0lCommunication
+        self._newStyleSerialCommunication = newStyleSerialCommunication
         
         # get everything we need for the version specific stuff
         self._protocolVersions = protocolVersions.ProtocolVersions(versionsConfigDirectory)
@@ -128,7 +125,7 @@ value16 = extr_speed_actual 29 fixedPoint 2 0lCommunication
             raise IOError, "Error: serial connection already open"
         
         # open the serial connection
-        if self._newStyleServialCommunication:
+        if self._newStyleSerialCommunication:
             # 57600, 8, N, 1
             self._ser = serial.Serial(self._serialDevice, timeout=serialTimeout, baudrate=57600)
         else:
@@ -215,7 +212,6 @@ value16 = extr_speed_actual 29 fixedPoint 2 0lCommunication
         elif s[1] != queryRequest:
             raise IOError,  "Error: the received %s response has an other id (%02x) as the request " % (queryName, ord(s[1]))
         payload = s[2:]
-value16 = extr_speed_actual 29 fixedPoint 2 0
 
         # all worked, now we need to reset the connection in a state we can talk again
         self._ser.write(ESCAPE + STARTCOMMUNICATION)
