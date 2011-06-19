@@ -216,7 +216,8 @@ class Protocol:
         # all worked, now we need to reset the connection in a state we can talk again
         self._ser.write(ESCAPE + STARTCOMMUNICATION)
         s = self._ser.read(1)
-        if s != ESCAPE:
+        # some heat pumps don't answer sometimes, but as everything else works for these heat pumps , its ok and we ignore it
+        if s and s != ESCAPE:
             printHex(s)
             raise IOError, "Error: could not be set again into receiving mode (%s)" % queryName
         
