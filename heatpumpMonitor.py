@@ -27,6 +27,7 @@ import traceback
 
 import protocol
 import storage
+import json
 import render
 import deamon
 import threadedExec
@@ -70,6 +71,7 @@ def doMonitor():
         
         p = protocol.Protocol(config.getSerialDevice(), config.getProtocolVersionsDirectory(), config.getNewStyleSerialCommunication())
         s = storage.Storage(config.getDatabaseFile())
+        j = json.Json(os.path.join(config.getRenderOutputPath(), "actual_values.json"))
         r = render.Render(config.getDatabaseFile(), config.getRenderOutputPath())
         c = None # ThreadedExec for copyCommand
         aReport = report.Report(config)
@@ -101,6 +103,10 @@ def doMonitor():
             # render it if the time is right
             if counter % renderInterval == 0:
                 r.render()
+            
+            
+
+            
             
             # upload it somewhere if it fits the time
             if copyCommand and counter % copyInterval == 0:
