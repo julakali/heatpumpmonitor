@@ -101,13 +101,12 @@ def doMonitor():
             # store the stuff
             s.add(values)
             
-            # render it if the time is right
+            # write the json file everything, as it does not use much cpu
+            j.write(values)
+                        
+            # render it if the time is right ... it takes a lot of cpu on small embedded systems
             if counter % renderInterval == 0:
                 r.render()
-            
-            
-
-            
             
             # upload it somewhere if it fits the time
             if copyCommand and counter % copyInterval == 0:
