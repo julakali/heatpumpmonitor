@@ -73,6 +73,7 @@ class ProtocolVersions:
             query = {"name": queryName}
             query["comment"] = p.get(queryName, "comment")
             query["request"] = p.get(queryName, "request").decode("string-escape")
+            query["request2"] = p.get(queryName, "request2").decode("string-escape")
             query["responseLength"] = p.getint(queryName, "responseLength")
 
             # now the value part in the correct order

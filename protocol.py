@@ -160,6 +160,13 @@ class Protocol:
             # we wait 1 sec, as it should be avoided that the connection is opened to fast again
             time.sleep(1)
 
+    def _get(self, queryName, queryRequest, queryRequest2, queryResponseLength):
+        """ get method which maps a 2-query request into two separate get calls.
+            Required for some queries which return 2x2 bytes. See FHEMs THZ 'cmd3'.
+        """
+        response1 = self._get(queryName, queryRequest, queryResponseLength)
+
+
     def _get(self, queryName,  queryRequest,  queryResponseLength):
         """ internal method which does the real quering - provide it with a dict
             of the query protocol and it will handle the rest
