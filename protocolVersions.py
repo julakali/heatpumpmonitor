@@ -14,7 +14,7 @@
     This module handles the version specific settings of the protocol to the heat
     pump. It loads them from the ini files and provides an interface for the
     protocol.py module.
-    
+
     Written by Robert Penz <robert@penz.name>
 """
 
@@ -27,15 +27,15 @@ class ProtocolVersions:
     def __init__(self, versionsConfigDirectory):
         self._versionsConfigDirectory = versionsConfigDirectory
         self._config = self.parseAllConfigs()
-        
-    
+
+
     def getConfig(self, version):
         """ returns the config specific for the request heat pumpt software version """
         try:
             return self._config[version]
         except:
             raise ValueError, "No configuration available for this software version of the heat pump."
-    
+
     def parseAllConfigs(self):
         """ searches through the directory and adds eachs version config to the big config """
         result = {}
@@ -51,22 +51,22 @@ class ProtocolVersions:
             at this point as these files should be only created by "experts" ;-)
         """
         config = {}
-        
+
         p = ConfigParser()
         p.read(filename)
-        
+
         # global section stuff
         versions = p.get("Global", "versions").strip().split()
         config["author"] = p.get("Global", "author")
         config["comment"] = p.get("Global", "comment")
-        
+
         # later this can be extended for multible replaces
         tmp = p.get("Global", "globalReplaceString").strip().decode("string-escape").split()
         if not tmp:
             config["globalReplaceString"] = None
         else:
             config["globalReplaceString"] = tmp
-        
+
         # now jump to the query specific settings
         queries = []
         for queryName in p.get("Global", "queries").strip().split():
@@ -74,7 +74,7 @@ class ProtocolVersions:
             query["comment"] = p.get(queryName, "comment")
             query["request"] = p.get(queryName, "request").decode("string-escape")
             query["responseLength"] = p.getint(queryName, "responseLength")
-            
+
             # now the value part in the correct order
             tmp = p.items(queryName)
             tmp.sort()
@@ -87,11 +87,15 @@ class ProtocolVersions:
                     vs.append({"name": v[0], "position": int(v[1]), "type": "fixedPoint", "size": int(v[3]), "fixedDecimals": int(v[4])})
                 elif v[2].lower() == "datetime":
                     vs.append({"name": v[0], "position": int(v[1]), "type": "DateTime", "size": int(v[3]), "separator": v[4]})
+                elif v[2].lower() == "bit":
+                    vs.append({"name": v[0], "position": int(v[1]), "type": "bit", "size": int(v[3]), "bitindex": v[4]})
+                elif v[2].lower() == "nbit":
+                    vs.append({"name": v[0], "position": int(v[1]), "type": "nbit", "size": int(v[3]), "bitindex": v[4]})
             query["values"] = vs
             queries.append(query)
         config["queries"] = queries
         return versions, config
-        
+
 
 # Main program: only for testing
 def main():

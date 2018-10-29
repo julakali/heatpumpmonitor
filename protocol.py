@@ -34,6 +34,19 @@ BEGIN = "\x01\x00"
 END = "\x03"
 GETVERSION = "\xfd"
 
+def convert2Boolean(s, bitindex=0, inverted=False):
+    """ converts a byte string into bit/boolean using the given index """
+    if not len(s) == 1:
+        raise ValueError, "Error: currenty this function supports only 1 byte inputs"
+    # convert to bit:
+    wholeByte = bytearray(s)[0]
+    bits = [wholeByte >> 7, wholeByte >> 6, wholeByte >> 5, wholeByte >> 4, wholeByte >> 3, wholeByte >> 2, wholeByte >> 1, wholeByte]
+    bits = map(lambda x: x & 1, bits)
+    result = bool(bits[int(bitindex)])
+    if inverted:
+        result = not result
+    return result
+
 def convert2Number(s, fixedDecimals=1):
     """ converts various input values into float or int """
     if not len(s) in (1, 2):
@@ -209,8 +222,9 @@ class Protocol:
             raise IOError,  "Error: the received %s response has an invalid length (%d instead of %d)" % (queryName, len(s) - 2, queryResponseLength)
         elif not verifyChecksum(s):
             raise IOError,  "Error: the received %s response has an invalid checksum" % queryName
-        elif s[1] != queryRequest:
-            raise IOError,  "Error: the received %s response has an other id (%02x) as the request " % (queryName, ord(s[1]))
+        elif s[1:1+len(queryRequest)] != queryRequest:
+            raise IOError,  "Error: the received %s response has an other id (%s) as the request (%s)" % (queryName, " ".join("{:02x}".format(ord(c)) for c in s[1:1+len(queryRequest)]), queryRequest)
+            #print " ".join("{:02x}".format(ord(c)) for c in s) #debug printout
         payload = s[2:]
 
         # all worked, now we need to reset the connection in a state we can talk again
@@ -241,6 +255,10 @@ class Protocol:
                 result[entry["name"]] =  convert2Number(s[entry["position"]:entry["position"] + entry["size"]], entry["fixedDecimals"])
             elif entry["type"] == "DateTime":
                 result[entry["name"]] =  convert2DateTime(s[entry["position"]:entry["position"] + entry["size"]], entry["separator"])
+            elif entry["type"] == "bit":
+                result[entry["name"]] = convert2Boolean(s[entry["position"]:entry["position"] + entry["size"]], entry["bitindex"])
+            elif entry["type"] == "nbit":
+                result[entry["name"]] = convert2Boolean(s[entry["position"]:entry["position"] + entry["size"]], entry["bitindex"], inverted=True)
         return result
     
     def versionQuery(self):
