@@ -115,7 +115,7 @@ class Protocol:
     # The object which does the serial talking
     _ser = None
 
-    def __init__(self, serialDevice="/dev/ttyS0", versionsConfigDirectory = "/usr/local/share/heatpump/protocolVersions", newStyleSerialCommunication = True,  debug=False):
+    def __init__(self, serialDevice="/dev/ttyUSB0", versionsConfigDirectory = "/usr/local/share/heatpump/protocolVersions", newStyleSerialCommunication = True,  debug=False):
         self._serialDevice = serialDevice
         self._debug = debug
         self._newStyleSerialCommunication = newStyleSerialCommunication
@@ -140,7 +140,7 @@ class Protocol:
         # open the serial connection
         if self._newStyleSerialCommunication:
             # 57600, 8, N, 1
-            self._ser = serial.Serial(self._serialDevice, timeout=serialTimeout, baudrate=57600)
+            self._ser = serial.Serial(self._serialDevice, timeout=serialTimeout, baudrate=115200)
         else:
             # old version
             self._ser = serial.Serial(self._serialDevice, timeout=serialTimeout)
@@ -283,9 +283,29 @@ class Protocol:
 
 # Main program: only for testing
 def main():
-    aP = Protocol(versionsConfigDirectory="protocolVersions/")
+    aP = Protocol(versionsConfigDirectory="protocolVersions/", serialDevice="/dev/ttyVIRT")
     #print aP._config
     print aP.query()
+    for query in aP._config["queries"]:
+        if query["name"] == "OperationalState" or query["name"] == "ActualValues":
+            print query["name"]
+            result = {}
+            try:
+                aP._establishConnection()
+                result.update(aP._getValues(query))
+            finally:
+                aP._closeConnection()
+            print result
+    # for query in aP._config["queries"]:
+    #     if query["name"] == "HeatDHWDay":
+    #         print query["name"]
+    #         result = {}
+    #         try:
+    #             aP._establishConnection()
+    #             result.update(aP._getValues(query))
+    #         finally:
+    #             aP._closeConnection()
+    #         print result
 
 
 if __name__ == '__main__':
