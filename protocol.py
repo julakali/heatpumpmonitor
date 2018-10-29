@@ -12,9 +12,9 @@
 
 """
     This module is responsible for the communication with the LWZ heat pump.
-    Currently it is only able to query the heat pump and can therefore not 
+    Currently it is only able to query the heat pump and can therefore not
     write options. This is by design do not damage the LWZ.
-    
+
     Written by Robert Penz <robert@penz.name>
 """
 
@@ -69,11 +69,11 @@ def convert2DateTime(s, separator):
     return l[:2] + separator + l[2:]
 
 def printHex(s):
-    print "debug: ", 
+    print "debug: ",
     i = 0
     for t in s:
         if i % 4 == 0:
-            print "| %d:" % i,  
+            print "| %d:" % i,
         print "%02x" % ord(t),
         i += 1
     print "|"
@@ -96,7 +96,7 @@ def verifyChecksum(s):
 def addChecksum(s):
     """ inserts a the beginning a checksum """
     if len(s) < 1:
-        raise ValueError, "The provided string needs to be atleast 1 byte long"    
+        raise ValueError, "The provided string needs to be atleast 1 byte long"
     return (_calcChecksum(s) + s)
 
 
@@ -104,14 +104,14 @@ class Protocol:
     # The device we talk to
     _serialDevice = None
     _debug = None
-    
-    # Protocol Versions object 
+
+    # Protocol Versions object
     _protocolVersions = None
     _version = None
-    
-    # The protocol definition the used version of the protocol 
+
+    # The protocol definition the used version of the protocol
     _config = None
-    
+
     # The object which does the serial talking
     _ser = None
 
@@ -119,7 +119,7 @@ class Protocol:
         self._serialDevice = serialDevice
         self._debug = debug
         self._newStyleSerialCommunication = newStyleSerialCommunication
-        
+
         # get everything we need for the version specific stuff
         self._protocolVersions = protocolVersions.ProtocolVersions(versionsConfigDirectory)
         self._version = self.versionQuery()
@@ -131,19 +131,19 @@ class Protocol:
 
 
     def _establishConnection(self):
-        """ opens the serial connection and makes a "ping" to check if the 
-            heat pump is responding 
+        """ opens the serial connection and makes a "ping" to check if the
+            heat pump is responding
         """
         if self._ser:
             raise IOError, "Error: serial connection already open"
-        
+
         # open the serial connection
         if self._newStyleSerialCommunication:
             # 57600, 8, N, 1
             self._ser = serial.Serial(self._serialDevice, timeout=serialTimeout, baudrate=57600)
         else:
             # old version
-            self._ser = serial.Serial(self._serialDevice, timeout=serialTimeout) 
+            self._ser = serial.Serial(self._serialDevice, timeout=serialTimeout)
 
         # check if the heat pump is connected and responds
         self._ser.write(STARTCOMMUNICATION)
@@ -159,7 +159,7 @@ class Protocol:
             self._ser = None
             # we wait 1 sec, as it should be avoided that the connection is opened to fast again
             time.sleep(1)
-    
+
     def _get(self, queryName,  queryRequest,  queryResponseLength):
         """ internal method which does the real quering - provide it with a dict
             of the query protocol and it will handle the rest
@@ -182,10 +182,10 @@ class Protocol:
                 self._establishConnection()
         if not success:
             raise IOError, "Error: Tried the request %s five times but the heat pump did not anwser correctly." % queryName
-        
+
         # ready to receive data
         self._ser.write(ESCAPE)
-        
+
         # we read data until we get the END flag, but not if the END flag is not escaped
         s = ""
         escaping = False
@@ -193,7 +193,7 @@ class Protocol:
             tmp = self._ser.read(1)
             if not tmp:
                 raise IOError, "Error: data stream brocken during %s reponse" % queryName
-        
+
             if len(s) < 2: # first 2 chars should be the header
                 s += tmp
                 if len(s) == 2 and s != BEGIN:
@@ -206,7 +206,7 @@ class Protocol:
                         s += tmp
                         escaping = False
                     else:
-                        raise IOError, "Error: some char (%02x) got escaped which should not in %s request" % (ord(tmp), queryName)                    
+                        raise IOError, "Error: some char (%02x) got escaped which should not in %s request" % (ord(tmp), queryName)
                 elif tmp == ESCAPE: # this char is used for escaping
                     escaping = True # do add nothing
                 else: # normal, just add the char
@@ -215,7 +215,7 @@ class Protocol:
         # don't really know why, but it seems necessary for some versions
         if self._config and self._config["globalReplaceString"]:
             s = s.replace(self._config["globalReplaceString"][0], self._config["globalReplaceString"][1])
-            
+
         # check the checksum and if the response matches the request
         s = s[len(BEGIN):]
         if len(s) - 2 != queryResponseLength: # 2 = the checksum and the response id.
@@ -225,7 +225,7 @@ class Protocol:
         elif s[1:1+len(queryRequest)] != queryRequest:
             raise IOError,  "Error: the received %s response has an other id (%s) as the request (%s)" % (queryName, " ".join("{:02x}".format(ord(c)) for c in s[1:1+len(queryRequest)]), queryRequest)
             #print " ".join("{:02x}".format(ord(c)) for c in s) #debug printout
-        payload = s[2:]
+        payload = s[1+len(queryRequest):]
 
         # all worked, now we need to reset the connection in a state we can talk again
         self._ser.write(ESCAPE + STARTCOMMUNICATION)
@@ -234,17 +234,17 @@ class Protocol:
         if s and s != ESCAPE:
             printHex(s)
             raise IOError, "Error: could not be set again into receiving mode (%s)" % queryName
-        
+
         # for debugging
         if self._debug:
             printHex(payload)
-        
+
         return payload
-    
+
     def _getVersion(self):
         """ extracts the version of the heat pump software """
         return str(convert2Number(self._get("getVersion", GETVERSION, 2), 2))
-    
+
     def _getValues(self, queryData):
         """ extracts the values configured for this query """
         s = self._get(queryData["name"],  queryData["request"],  queryData["responseLength"])
@@ -260,7 +260,7 @@ class Protocol:
             elif entry["type"] == "nbit":
                 result[entry["name"]] = convert2Boolean(s[entry["position"]:entry["position"] + entry["size"]], entry["bitindex"], inverted=True)
         return result
-    
+
     def versionQuery(self):
         """ the version query is seperated from the other as it is fixed and not queried every time """
         try:
@@ -268,7 +268,7 @@ class Protocol:
             return self._getVersion()
         finally:
             self._closeConnection()
-    
+
     def query(self):
         """ this method return you a dict with the retrieved values from the heat pump """
         result = {}
@@ -279,7 +279,7 @@ class Protocol:
         finally:
             self._closeConnection()
         return result
-        
+
 
 # Main program: only for testing
 def main():
