@@ -165,6 +165,12 @@ class Protocol:
             Required for some queries which return 2x2 bytes. See FHEMs THZ 'cmd3'.
         """
         response1 = self._get(queryName, queryRequest, queryResponseLength)
+        response2 = self._get(queryName, queryRequest2, queryResponseLength)
+        print "two responses"
+        print response1
+        print response2
+        bytearray(response2)[0]
+        return response1
 
 
     def _get(self, queryName,  queryRequest,  queryResponseLength):
@@ -254,7 +260,10 @@ class Protocol:
 
     def _getValues(self, queryData):
         """ extracts the values configured for this query """
-        s = self._get(queryData["name"],  queryData["request"],  queryData["responseLength"])
+        if queryData["request2"]:
+            self._get(queryData["name"],  queryData["request"], queryData["request2"], queryData["responseLength"])
+        else:
+            s = self._get(queryData["name"],  queryData["request"],  queryData["responseLength"])
         result = {}
         for entry in queryData["values"]:
             # diffent types need to be converted differently
